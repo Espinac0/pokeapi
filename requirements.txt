@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+pydantic
+redis
+
+junit-xml==1.9        # Generación de reportes de pruebas en formato XML compatible con Jenkins
