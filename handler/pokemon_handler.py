@@ -1,6 +1,8 @@
 from fastapi import HTTPException
+import requests
 from typing import List
 from models.pokemon_model import fetch_water_pokemons
+from config.redis_config import redis_client
 
 def get_water_pokemons_handler() -> List[str]:
     pokemons = fetch_water_pokemons()
@@ -20,10 +22,8 @@ def fetch_pokemon_by_id(pokemon_id: int) -> str:
         response.raise_for_status()
         data = response.json()
 
-        redis_client.setex(str(pokemon_id), 3600, data["name"])  # Guarda en caché
+        redis_client.setex(str(pokemon_id), 3600, data["name"])  # Guarda en caché por 1 hora
         return data["name"]
     except Exception as e:
-        logger = Logger()
-        logger.add_to_log("error", f"Error al obtener el Pokémon con ID {pokemon_id}: {e}")
-        sentry_sdk.capture_exception(e)  # Captura errores en Sentry
+        print(f"Error al obtener el Pokémon con ID {pokemon_id}: {e}")
         return ""
