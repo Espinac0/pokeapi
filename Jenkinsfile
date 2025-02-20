@@ -1,55 +1,70 @@
 pipeline {
-    agent any
+    agent any  // Usar cualquier agente disponible de Jenkins
     
     environment {
-        DOCKER_IMAGE = 'pokeapi-app'
-        APP_PORT = '8000'
+        DOCKER_IMAGE = 'pokeapi-app'  // Mantenemos el nombre original de la imagen
+        CONTAINER_NAME = 'pokeapi-container'  // Mantenemos el nombre original del contenedor
+        APP_PORT = '8000'  // Puerto de la aplicación
     }
-    
+
     stages {
-        stage('Check Docker') {
+        // 1. Checkout: Obtener el código del repositorio
+        stage('Checkout') {
             steps {
-                bat 'docker version'
+                git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'main'  // Clonar el repositorio
             }
         }
 
+        // 2. Build Docker Image: Crear la imagen Docker con el Dockerfile
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t %DOCKER_IMAGE% .'
+                script {
+                    echo 'Building Docker image...'
+                    bat 'docker build -t %DOCKER_IMAGE% .'  // Construir imagen
+                }
             }
         }
-        
-        stage('Run Tests in Docker') {
+
+        // 3. Run Docker Compose: Levantar tanto la aplicación como Redis
+        stage('Run Docker Compose') {
             steps {
-                // Iniciar Redis y ejecutar los tests
-                bat 'docker run --rm %DOCKER_IMAGE% sh -c "redis-server --daemonize yes && sleep 2 && python -m pytest"'
+                script {
+                    echo 'Running Docker Compose...'
+                    // Primero detenemos contenedores existentes si los hay
+                    bat 'docker-compose down || exit /b 0'
+                    // Levantamos los servicios en segundo plano
+                    bat 'docker-compose up -d'
+                }
             }
         }
-        
-        stage('Deploy') {
+
+        // 4. Run Tests: Ejecutar los tests en el contenedor
+        stage('Run Pytest') {
             steps {
-                // Limpiar contenedor existente si existe
-                bat 'docker rm -f pokeapi-container || exit /b 0'
-                
-                // Desplegar nuevo contenedor
-                bat 'docker run -d -p %APP_PORT%:%APP_PORT% --name pokeapi-container %DOCKER_IMAGE%'
-                
-                // Verificar que el contenedor está corriendo
-                bat 'timeout /t 5 /nobreak > nul && docker ps | findstr pokeapi-container'
+                script {
+                    echo 'Running Pytest...'
+                    // Esperamos unos segundos para asegurar que los servicios estén listos
+                    bat 'powershell -Command "Start-Sleep -Seconds 5"'
+                    // Ejecutar tests en el contenedor
+                    bat 'docker exec %CONTAINER_NAME% python -m pytest tests/'
+                }
             }
         }
     }
-    
+
     post {
         success {
-            echo 'Pipeline ejecutado correctamente! La API está disponible en http://localhost:8000'
+            echo 'Pipeline completed successfully! API is available at http://localhost:8000'
         }
         failure {
-            echo 'La ejecución del pipeline falló. Revisa los logs para más detalles.'
-            bat 'docker rm -f pokeapi-container || exit /b 0'
+            echo 'Pipeline failed. Check the logs for details.'
+            script {
+                // Limpieza en caso de fallo
+                bat 'docker-compose down || exit /b 0'
+            }
         }
         always {
-            cleanWs()
+            cleanWs()  // Limpieza del workspace
         }
     }
 }
