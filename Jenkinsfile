@@ -1,46 +1,48 @@
 pipeline {
-    agent any  // Usar cualquier agente disponible de Jenkins
+    agent any
     
     environment {
-        DOCKER_IMAGE = 'pokeapi-app:latest'  // Nombre para la imagen Docker
-        CONTAINER_NAME = 'pokeapi-container'  // Nombre para el contenedor Docker
+        DOCKER_IMAGE = 'pokeapi-app'
     }
-
+    
     stages {
-        // 1. Checkout: Obtener el código del repositorio
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'main'  // Clonar el repositorio
-            }
-        }
-
-        // 2. Build Docker Image: Crear la imagen Docker con el Dockerfile
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo 'Building Docker image...'
-                    sh 'docker build -t $DOCKER_IMAGE .'  // Construir imagen
+                    sh 'docker build -t $DOCKER_IMAGE .'
                 }
             }
         }
-
-        // 4. Run Tests: Ejecutar los tests en el contenedor
-        stage('Run Pytest') {
+        
+        stage('Run Tests in Docker') {
             steps {
                 script {
-                    echo 'Running Pytest...'
-                    sh 'docker exec pokeapi-container /app/venv/bin/pytest tests/'  // Ejecutar tests en el contenedor
+                    sh 'docker run --rm $DOCKER_IMAGE pytest'
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    sh '''
+                        docker ps -q --filter "name=pokeapi-container" | grep -q . && docker stop pokeapi-container && docker rm pokeapi-container || true
+                        docker run -d -p 8000:8000 --name pokeapi-container $DOCKER_IMAGE
+                    '''
                 }
             }
         }
     }
-
+    
     post {
+        always {
+            cleanWs()
+        }
         success {
-            echo 'Pipeline completed successfully.'  // Si la ejecución es exitosa
+            echo 'Pipeline ejecutado correctamente!'
         }
         failure {
-            echo 'There was an issue with the pipeline.'  // Si ocurre algún error
+            echo 'La ejecución del pipeline falló.'
         }
     }
 }
