@@ -3,5 +3,5 @@ uvicorn
 requests
 pydantic
 redis
-
+pytest==7.4.3        # Testing framework
 junit-xml==1.9        # Generación de reportes de pruebas en formato XML compatible con Jenkins
