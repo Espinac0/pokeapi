@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/sh
+set -e
 
 # Iniciar Redis en segundo plano
 redis-server --daemonize yes
@@ -7,4 +8,4 @@ redis-server --daemonize yes
 sleep 2
 
 # Iniciar la aplicación
-exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+exec uvicorn main:app --host 0.0.0.0 --port 8000
