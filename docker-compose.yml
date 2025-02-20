@@ -1,8 +1,9 @@
 version: '3.8'
 
 services:
-  web:
+  pokeapi-container:
     build: .
+    container_name: pokeapi-container
     ports:
       - "8000:8000"
     depends_on:
@@ -13,5 +14,6 @@ services:
 
   redis:
     image: redis:latest
+    container_name: pokeapi-redis
     ports:
       - "6379:6379"

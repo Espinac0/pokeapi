@@ -34,6 +34,10 @@ pipeline {
                     bat 'docker-compose down || exit /b 0'
                     // Levantamos los servicios en segundo plano
                     bat 'docker-compose up -d'
+                    // Esperamos a que los contenedores estén listos
+                    bat 'powershell -Command "Start-Sleep -Seconds 10"'
+                    // Verificamos que los contenedores están corriendo
+                    bat 'docker ps --format "{{.Names}}" | findstr pokeapi-container'
                 }
             }
         }
@@ -43,10 +47,8 @@ pipeline {
             steps {
                 script {
                     echo 'Running Pytest...'
-                    // Esperamos unos segundos para asegurar que los servicios estén listos
-                    bat 'powershell -Command "Start-Sleep -Seconds 5"'
                     // Ejecutar tests en el contenedor
-                    bat 'docker exec %CONTAINER_NAME% python -m pytest tests/'
+                    bat 'docker exec pokeapi-container python -m pytest tests/'
                 }
             }
         }
