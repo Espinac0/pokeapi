@@ -9,7 +9,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    bat 'docker build -t %DOCKER_IMAGE% .'
                 }
             }
         }
@@ -17,7 +17,7 @@ pipeline {
         stage('Run Tests in Docker') {
             steps {
                 script {
-                    sh 'docker run --rm $DOCKER_IMAGE pytest'
+                    bat 'docker run --rm %DOCKER_IMAGE% pytest'
                 }
             }
         }
@@ -25,9 +25,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    sh '''
-                        docker ps -q --filter "name=pokeapi-container" | grep -q . && docker stop pokeapi-container && docker rm pokeapi-container || true
-                        docker run -d -p 8000:8000 --name pokeapi-container $DOCKER_IMAGE
+                    bat '''
+                        docker ps -q --filter "name=pokeapi-container" && docker stop pokeapi-container && docker rm pokeapi-container || exit 0
+                        docker run -d -p 8000:8000 --name pokeapi-container %DOCKER_IMAGE%
                     '''
                 }
             }
