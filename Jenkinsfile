@@ -73,19 +73,5 @@ pipeline {
         failure {
             echo 'Pipeline failed. Check the logs for details.'
         }
-        always {
-            script {
-                echo 'Performing final cleanup...'
-                try {
-                    // Detenemos y eliminamos contenedores
-                    bat 'docker-compose down --remove-orphans || exit /b 0'
-                    bat 'powershell -Command "Start-Sleep -Seconds 2"'
-                    bat 'docker rm -f pokeapi-container pokeapi-redis || exit /b 0'
-                    bat 'docker image prune -f || exit /b 0'
-                } catch (Exception e) {
-                    echo "Warning: Cleanup encountered an error: ${e.message}"
-                }
-            }
-        }
     }
 }
