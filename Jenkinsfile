@@ -8,14 +8,28 @@ pipeline {
     }
 
     stages {
-        // 1. Checkout: Obtener el código del repositorio
+        // 1. Limpieza inicial
+        stage('Cleanup') {
+            steps {
+                script {
+                    echo 'Cleaning up environment...'
+                    // Detenemos y eliminamos contenedores existentes
+                    bat 'docker-compose down --remove-orphans || exit /b 0'
+                    bat 'docker rm -f pokeapi-container pokeapi-redis || exit /b 0'
+                    // Limpiamos imágenes no utilizadas
+                    bat 'docker image prune -f || exit /b 0'
+                }
+            }
+        }
+
+        // 2. Checkout: Obtener el código del repositorio
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'master'  // Clonar el repositorio
             }
         }
 
-        // 2. Build Docker Image: Crear la imagen Docker con el Dockerfile
+        // 3. Build Docker Image: Crear la imagen Docker con el Dockerfile
         stage('Build Docker Image') {
             steps {
                 script {
@@ -25,13 +39,11 @@ pipeline {
             }
         }
 
-        // 3. Run Docker Compose: Levantar tanto la aplicación como Redis
+        // 4. Run Docker Compose: Levantar tanto la aplicación como Redis
         stage('Run Docker Compose') {
             steps {
                 script {
                     echo 'Running Docker Compose...'
-                    // Primero detenemos contenedores existentes si los hay
-                    bat 'docker-compose down || exit /b 0'
                     // Levantamos los servicios en segundo plano
                     bat 'docker-compose up -d'
                     // Esperamos a que los contenedores estén listos
@@ -42,7 +54,7 @@ pipeline {
             }
         }
 
-        // 4. Run Tests: Ejecutar los tests en el contenedor
+        // 5. Run Tests: Ejecutar los tests en el contenedor
         stage('Run Pytest') {
             steps {
                 script {
@@ -60,13 +72,20 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
-            script {
-                // Limpieza en caso de fallo
-                bat 'docker-compose down || exit /b 0'
-            }
         }
         always {
-            cleanWs()  // Limpieza del workspace
+            script {
+                echo 'Performing final cleanup...'
+                try {
+                    // Detenemos y eliminamos contenedores
+                    bat 'docker-compose down --remove-orphans || exit /b 0'
+                    bat 'powershell -Command "Start-Sleep -Seconds 2"'
+                    bat 'docker rm -f pokeapi-container pokeapi-redis || exit /b 0'
+                    bat 'docker image prune -f || exit /b 0'
+                } catch (Exception e) {
+                    echo "Warning: Cleanup encountered an error: ${e.message}"
+                }
+            }
         }
     }
 }
