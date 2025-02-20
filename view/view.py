@@ -31,14 +31,18 @@ async def get_water_pokemons():
             return json.loads(cached_data)
             
         # Si no está en caché, obtener de la PokeAPI
+        logger.add_to_log("info", "Datos no encontrados en caché, consultando PokeAPI")
         response = requests.get("https://pokeapi.co/api/v2/type/11")  # 11 es el ID del tipo agua
         if response.status_code == 200:
             data = response.json()
             water_pokemons = [pokemon['pokemon']['name'] for pokemon in data['pokemon']]
             
             # Guardar en caché
-            redis_client.setex(cache_key, CACHE_EXPIRATION, json.dumps(water_pokemons))
-            logger.add_to_log("info", "Datos guardados en la caché de Redis")
+            try:
+                redis_client.setex(cache_key, CACHE_EXPIRATION, json.dumps(water_pokemons))
+                logger.add_to_log("info", "Datos guardados en la caché de Redis")
+            except Exception as e:
+                logger.add_to_log("error", f"Error al guardar en Redis: {str(e)}")
             
             return water_pokemons
         else:
@@ -51,19 +55,40 @@ async def get_water_pokemons():
         logger.add_to_log("error", f"Error al obtener pokémon de tipo agua: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Función de respaldo cuando Redis no está disponible
+@router.get("/water-pokemons-without-cache", response_model=List[str])
 async def get_water_pokemons_without_cache():
-    """Función de respaldo cuando Redis no está disponible"""
     response = requests.get("https://pokeapi.co/api/v2/type/11")
     if response.status_code == 200:
         data = response.json()
         return [pokemon['pokemon']['name'] for pokemon in data['pokemon']]
-    raise HTTPException(status_code=response.status_code, detail="Error al obtener datos de PokeAPI")
+    else:
+        raise HTTPException(status_code=response.status_code, detail="Error al obtener datos de PokeAPI")
 
 @router.get("/redis-health")
 async def check_redis_health():
-    """Endpoint para verificar el estado de Redis"""
     try:
         redis_client.ping()
         return {"status": "healthy", "message": "Redis está funcionando correctamente"}
     except redis.RedisError as e:
         raise HTTPException(status_code=500, detail=f"Redis no está disponible: {str(e)}")
+
+@router.get("/redis-test")
+async def test_redis():
+    try:
+        # Intentar escribir en Redis
+        redis_client.set("test_key", "test_value")
+        # Leer el valor
+        value = redis_client.get("test_key")
+        # Obtener todas las claves
+        keys = redis_client.keys("*")
+        return {
+            "status": "success",
+            "test_value": value,
+            "all_keys": keys
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }

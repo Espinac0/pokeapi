@@ -2,14 +2,16 @@ from fastapi import FastAPI
 from view.view import router
 from utils.Logger import Logger
 
+app = FastAPI(title="Pokémon API")
 logger = Logger()
 
 logger.add_to_log("info", "La aplicación FastAPI ha comenzado correctamente.")
 
-app = FastAPI(title="Pokémon API")
-
-# Registrar las rutas desde el router
 app.include_router(router, prefix="")  # Aseguramos que no hay prefijo
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Pokemon API!"}
 
 if __name__ == "__main__":
     import uvicorn
