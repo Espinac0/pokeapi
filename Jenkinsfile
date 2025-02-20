@@ -11,7 +11,7 @@ pipeline {
         // 1. Checkout: Obtener el código del repositorio
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'main'  // Clonar el repositorio
+                git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'master'  // Clonar el repositorio
             }
         }
 
