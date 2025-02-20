@@ -7,10 +7,30 @@ pipeline {
     }
     
     stages {
+        stage('Check Docker') {
+            steps {
+                script {
+                    // Verificar que Docker está disponible
+                    bat '''
+                        echo "Verificando Docker..."
+                        docker info
+                        if errorlevel 1 (
+                            echo "Error: Docker no está disponible"
+                            exit /b 1
+                        )
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    bat 'docker build -t %DOCKER_IMAGE% .'
+                    // Usar pwd para obtener la ruta actual
+                    bat '''
+                        echo "Construyendo imagen desde %CD%"
+                        docker build -t %DOCKER_IMAGE% "%CD%"
+                    '''
                 }
             }
         }
@@ -18,7 +38,10 @@ pipeline {
         stage('Run Tests in Docker') {
             steps {
                 script {
-                    bat 'docker run --rm %DOCKER_IMAGE% python -m pytest'
+                    bat '''
+                        echo "Ejecutando tests..."
+                        docker run --rm %DOCKER_IMAGE% python -m pytest
+                    '''
                 }
             }
         }
@@ -28,37 +51,41 @@ pipeline {
                 script {
                     // Intentar detener y eliminar el contenedor existente si existe
                     bat '''
-                        docker ps -q --filter "name=pokeapi-container" > tempFile
-                        set /p CONTAINER_ID=<tempFile
-                        if defined CONTAINER_ID (
-                            docker stop pokeapi-container
-                            docker rm pokeapi-container
+                        echo "Limpiando contenedores antiguos..."
+                        for /f "tokens=*" %%i in ('docker ps -aq --filter "name=pokeapi-container"') do (
+                            docker stop %%i 2>nul
+                            docker rm %%i 2>nul
                         )
-                        del tempFile
                     '''
                     
                     // Verificar si el puerto está en uso
                     bat '''
-                        netstat -ano | findstr :%APP_PORT% > tempPort
-                        set /p PORT_IN_USE=<tempPort
-                        if defined PORT_IN_USE (
+                        echo "Verificando puerto %APP_PORT%..."
+                        netstat -ano | findstr ":%APP_PORT%" > nul
+                        if not errorlevel 1 (
                             echo "Puerto %APP_PORT% en uso, intentando liberar..."
-                            for /f "tokens=5" %%a in (tempPort) do taskkill /f /pid %%a
+                            for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%APP_PORT%"') do (
+                                taskkill /f /pid %%a 2>nul
+                            )
                         )
-                        del tempPort
                     '''
                     
                     // Desplegar el nuevo contenedor
-                    bat 'docker run -d -p %APP_PORT%:%APP_PORT% --name pokeapi-container %DOCKER_IMAGE%'
-                    
-                    // Verificar que el contenedor está corriendo
                     bat '''
-                        timeout /t 5 /nobreak
-                        docker ps | findstr pokeapi-container
+                        echo "Desplegando nuevo contenedor..."
+                        docker run -d -p %APP_PORT%:%APP_PORT% --name pokeapi-container %DOCKER_IMAGE%
+                        
+                        echo "Esperando a que el contenedor esté listo..."
+                        timeout /t 5 /nobreak > nul
+                        
+                        echo "Verificando estado del contenedor..."
+                        docker ps | findstr "pokeapi-container"
                         if errorlevel 1 (
                             echo "Error: El contenedor no está corriendo"
                             exit /b 1
                         )
+                        
+                        echo "Contenedor desplegado correctamente en http://localhost:%APP_PORT%"
                     '''
                 }
             }
@@ -67,26 +94,22 @@ pipeline {
     
     post {
         always {
+            script {
+                bat '''
+                    echo "Limpieza post-pipeline..."
+                    for /f "tokens=*" %%i in ('docker ps -aq --filter "name=pokeapi-container" 2^>nul') do (
+                        docker stop %%i 2>nul
+                        docker rm %%i 2>nul
+                    )
+                '''
+            }
             cleanWs()
         }
         success {
-            echo 'Pipeline ejecutado correctamente! El contenedor está corriendo en http://localhost:8000'
+            echo 'Pipeline ejecutado correctamente! La API está disponible en http://localhost:8000'
         }
         failure {
-            echo 'La ejecución del pipeline falló.'
-            
-            // Intentar limpiar en caso de fallo
-            script {
-                bat '''
-                    docker ps -q --filter "name=pokeapi-container" > tempFile
-                    set /p CONTAINER_ID=<tempFile
-                    if defined CONTAINER_ID (
-                        docker stop pokeapi-container
-                        docker rm pokeapi-container
-                    )
-                    del tempFile 2>nul
-                '''
-            }
+            echo 'La ejecución del pipeline falló. Revisa los logs para más detalles.'
         }
     }
 }
