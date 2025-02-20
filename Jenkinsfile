@@ -9,40 +9,33 @@ pipeline {
     stages {
         stage('Check Docker') {
             steps {
-                script {
-                    bat 'docker version'
-                }
+                bat 'docker version'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    bat 'docker build -t %DOCKER_IMAGE% .'
-                }
+                bat 'docker build -t %DOCKER_IMAGE% .'
             }
         }
         
         stage('Run Tests in Docker') {
             steps {
-                script {
-                    bat 'docker run --rm %DOCKER_IMAGE% python -m pytest'
-                }
+                // Iniciar Redis y ejecutar los tests
+                bat 'docker run --rm %DOCKER_IMAGE% sh -c "redis-server --daemonize yes && sleep 2 && python -m pytest"'
             }
         }
         
         stage('Deploy') {
             steps {
-                script {
-                    // Limpiar contenedor existente si existe
-                    bat 'docker rm -f pokeapi-container || exit /b 0'
-                    
-                    // Desplegar nuevo contenedor
-                    bat 'docker run -d -p %APP_PORT%:%APP_PORT% --name pokeapi-container %DOCKER_IMAGE%'
-                    
-                    // Verificar que el contenedor está corriendo
-                    bat 'timeout /t 5 /nobreak > nul && docker ps | findstr pokeapi-container'
-                }
+                // Limpiar contenedor existente si existe
+                bat 'docker rm -f pokeapi-container || exit /b 0'
+                
+                // Desplegar nuevo contenedor
+                bat 'docker run -d -p %APP_PORT%:%APP_PORT% --name pokeapi-container %DOCKER_IMAGE%'
+                
+                // Verificar que el contenedor está corriendo
+                bat 'timeout /t 5 /nobreak > nul && docker ps | findstr pokeapi-container'
             }
         }
     }

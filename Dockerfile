@@ -20,10 +20,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia el resto de los archivos del proyecto
 COPY . .
 
-# Asegurar que start.sh tiene los permisos correctos y finales de línea Unix
-RUN chmod +x start.sh && \
-    sed -i 's/\r$//' start.sh
-
 # Variables de entorno para Redis
 ENV REDIS_HOST=localhost \
     REDIS_PORT=6379 \
@@ -32,5 +28,5 @@ ENV REDIS_HOST=localhost \
 # Expone los puertos
 EXPOSE 8000 6379
 
-# Comando para ejecutar la aplicación
-ENTRYPOINT ["/bin/sh", "start.sh"]
+# Comando por defecto para iniciar la aplicación
+CMD redis-server --daemonize yes && sleep 2 && uvicorn main:app --host 0.0.0.0 --port 8000
