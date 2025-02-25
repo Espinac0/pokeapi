@@ -2,13 +2,19 @@ from fastapi import HTTPException
 import requests
 import redis
 from typing import List
-from models.pokemon_model import fetch_water_pokemons
+from models.pokemon_model import *
 from config.redis_config import redis_client, check_redis_connection
 
 def get_water_pokemons_handler() -> List[str]:
     pokemons = fetch_water_pokemons()
     if not pokemons:
         raise HTTPException(status_code=404, detail="No Water-type Pokémon found")
+    return pokemons
+
+def get_fire_pokemons_handler() -> List[str]:
+    pokemons = fetch_fire_pokemons()
+    if not pokemons:
+        raise HTTPException(status_code=404, detail="No Fire-type Pokémon found")
     return pokemons
 
 def fetch_pokemon_by_id(pokemon_id: int) -> str:
