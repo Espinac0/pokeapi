@@ -64,6 +64,15 @@ async def get_water_pokemons_without_cache():
         return [pokemon['pokemon']['name'] for pokemon in data['pokemon']]
     else:
         raise HTTPException(status_code=response.status_code, detail="Error al obtener datos de PokeAPI")
+ 
+@router.get("/fire-pokemons-without-cache", response_model=List[str])
+async def get_fire_pokemons_without_cache():
+    response = requests.get("https://pokeapi.co/api/v2/type/10")
+    if response.status_code == 200:
+        data = response.json()
+        return [pokemon['pokemon']['name'] for pokemon in data['pokemon']]
+    else:
+        raise HTTPException(status_code=response.status_code, detail="Error al obtener datos de PokeAPI")
 
 @router.get("/redis-health")
 async def check_redis_health():

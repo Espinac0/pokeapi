@@ -2,7 +2,7 @@ from fastapi import HTTPException
 import requests
 import redis
 from typing import List
-from models.pokemon_model import *
+from models.pokemon_model import fetch_water_pokemons, fetch_fire_pokemons
 from config.redis_config import redis_client, check_redis_connection
 
 def get_water_pokemons_handler() -> List[str]:
