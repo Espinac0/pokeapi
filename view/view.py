@@ -5,7 +5,10 @@ from utils.Logger import Logger
 import redis
 import json
 import os
+
+from handler.pokemon_handler import get_pokemon_handler
 from pydantic import BaseModel
+
 logger = Logger()
 router = APIRouter()
 
@@ -19,6 +22,22 @@ CACHE_EXPIRATION = 3600  # 1 hora en segundos
 
 # Conexión a Redis
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+router = APIRouter()
+
+class Pokemon(BaseModel):
+    id: int
+    name: str
+    height: int
+    weight: int
+    types: list
+
+@router.get("/pokemon/{id}", response_model=Pokemon)
+async def get_pokemon_by_id(id: int):
+    """Obtiene un Pokémon por su número (ID)."""
+    pokemon = get_pokemon_handler(id)
+    if "error" in pokemon:
+        raise HTTPException(status_code=404, detail="Pokémon no encontrado")
+    return Pokemon(**pokemon)
 
 @router.get("/water-pokemons", response_model=List[str])
 async def get_water_pokemons():
