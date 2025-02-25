@@ -5,9 +5,12 @@ from utils.Logger import Logger
 import redis
 import json
 import os
-
+from pydantic import BaseModel
 logger = Logger()
 router = APIRouter()
+
+class Pokemon(BaseModel):
+    name: str
 
 # Configuración de Redis
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
@@ -64,15 +67,18 @@ async def get_water_pokemons_without_cache():
         return [pokemon['pokemon']['name'] for pokemon in data['pokemon']]
     else:
         raise HTTPException(status_code=response.status_code, detail="Error al obtener datos de PokeAPI")
- 
-@router.get("/fire-pokemons-without-cache", response_model=List[str])
-async def get_fire_pokemons_without_cache():
-    response = requests.get("https://pokeapi.co/api/v2/type/10")
-    if response.status_code == 200:
-        data = response.json()
-        return [pokemon['pokemon']['name'] for pokemon in data['pokemon']]
-    else:
-        raise HTTPException(status_code=response.status_code, detail="Error al obtener datos de PokeAPI")
+    
+
+
+
+@router.get("/pokemon/{id}", response_model=Pokemon)
+async def get_pokemon_by_id(id: int):
+    """Obtiene un Pokémon por su número (ID)."""
+    pokemon = fetch_pokemon_by_id(id)
+    if not pokemon:
+        raise HTTPException(status_code=404, detail="Pokémon no encontrado")
+    return Pokemon(name=pokemon)
+
 
 @router.get("/redis-health")
 async def check_redis_health():
@@ -81,9 +87,8 @@ async def check_redis_health():
         return {"status": "healthy", "message": "Redis está funcionando correctamente"}
     except redis.RedisError as e:
         raise HTTPException(status_code=500, detail=f"Redis no está disponible: {str(e)}")
+    
 
-@router.get("/redis-test")
-async def test_redis():
     try:
         # Intentar escribir en Redis
         redis_client.set("test_key", "test_value")

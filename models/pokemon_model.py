@@ -19,15 +19,6 @@ def get_water_type_url() -> Optional[str]:
                 return pokemon_type.get("url")
     return None
 
-def get_fire_type_url() -> Optional[str]:
-    url = "https://pokeapi.co/api/v2/type/"
-    data = fetch_data(url)
-    if data:
-        for pokemon_type in data.get("results", []):
-            if pokemon_type.get("name") == "fire":
-                return pokemon_type.get("url")
-    return None
-
 def fetch_water_pokemons() -> List[str]:
     water_type_url = get_water_type_url()
     if not water_type_url:
@@ -38,12 +29,10 @@ def fetch_water_pokemons() -> List[str]:
     else:
         return []
     
-def fetch_fire_pokemons() -> List[str]:
-    fire_type_url = get_fire_type_url()
-    if not fire_type_url:
-        return []
-    data = fetch_data(fire_type_url)
-    if data:
-        return [pokemon.get("pokemon", {}).get("name") for pokemon in data.get("pokemon", []) if pokemon.get("pokemon")]
-    else:
-        return []
+def fetch_pokemon_by_id(pokemon_id: int) -> dict:
+    """Obtiene la información de un Pokémon por su ID desde la PokeAPI."""
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return {"error": "Pokemon not found"}
