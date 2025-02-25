@@ -4,10 +4,9 @@ FROM python:3.10-slim
 # Establece un directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instalar Redis y configurar para que escuche en todas las interfaces
+# Instalar Redis
 RUN apt-get update && \
     apt-get install -y redis-server && \
-    sed -i 's/bind 127.0.0.1/bind 0.0.0.0/' /etc/redis/redis.conf && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -22,11 +21,10 @@ COPY . .
 
 # Variables de entorno para Redis
 ENV REDIS_HOST=localhost \
-    REDIS_PORT=6379 \
-    REDIS_DB=0
+    REDIS_PORT=6379
 
 # Expone los puertos
 EXPOSE 8000 6379
 
 # Comando por defecto para iniciar la aplicación
-CMD redis-server --daemonize yes && sleep 2 && uvicorn main:app --host 0.0.0.0 --port 8000
+CMD redis-server --daemonize yes && sleep 2 && python -m uvicorn main:app --host 0.0.0.0 --port 8000
