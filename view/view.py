@@ -4,7 +4,11 @@ import requests
 import json
 import redis
 import os
+<<<<<<< HEAD
 from handler.pokemon_handler import *
+=======
+from handler.pokemon_handler import get_pokemon_handler
+>>>>>>> 0a459b546b902fb91737c7f7098dc8163c457646
 from pydantic import BaseModel
 
 # Configuración de Redis
@@ -27,11 +31,18 @@ class Pokemon(BaseModel):
 @router.get("/pokemon/{id}", response_model=Pokemon)
 async def get_pokemon_by_id(id: int):
     """Obtiene un Pokémon por su número (ID)."""
+<<<<<<< HEAD
     pokemon_name = fetch_pokemon_by_id(id)  # Usa fetch_pokemon_by_id
     if not pokemon_name:
         logger.add_to_log("error", f"Pokémon con ID {id} no encontrado")  # Log de error
         raise HTTPException(status_code=404, detail="Pokémon no encontrado")
     return Pokemon(name=pokemon_name)  # Devuelve solo el nombre
+=======
+    pokemon = get_pokemon_handler(id)
+    if "error" in pokemon:
+        raise HTTPException(status_code=404, detail="Pokémon no encontrado")
+    return Pokemon(**pokemon)
+>>>>>>> 0a459b546b902fb91737c7f7098dc8163c457646
 
 @router.get("/water-pokemons", response_model=List[str])
 async def get_water_pokemons():
