@@ -22,7 +22,7 @@ async def get_pokemon_by_type(type_name: str):
         logger.add_to_log("error", f"No se encontraron Pokémon del tipo {type_name}")
         raise HTTPException(status_code=404, detail=f"No se encontraron Pokémon del tipo {type_name}")
     return [Pokemon(name=name) for name in pokemons]
-""""
+
 @router.get("/water-pokemons", response_model=List[Pokemon])
 async def get_water_pokemons():
     logger.add_to_log("info", "Solicitud recibida en /water-pokemons")
@@ -30,4 +30,4 @@ async def get_water_pokemons():
     if not pokemons:
         logger.add_to_log("error", "No se encontraron Pokémon de tipo agua")
         raise HTTPException(status_code=404, detail="No se encontraron Pokémon de tipo agua")
-    return [Pokemon(name=name) for name in pokemons]"""
+    return [Pokemon(name=name) for name in pokemons]

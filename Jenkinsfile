@@ -2,65 +2,48 @@ pipeline {
     agent any  // Usar cualquier agente disponible de Jenkins
     
     environment {
-        DOCKER_IMAGE = 'pokeapi-app'  // Mantenemos el nombre original de la imagen
-        CONTAINER_NAME = 'pokeapi-container'  // Mantenemos el nombre original del contenedor
-        APP_PORT = '8000'  // Puerto de la aplicación
+        DOCKER_IMAGE = 'pokeapi-app:latest'  // Usar siempre la última versión de la imagen
+        CONTAINER_NAME = 'pokeapi-container'  // Nombre del contenedor principal
     }
 
     stages {
-        // 1. Limpieza inicial
-        stage('Cleanup') {
+        // 1. Checkout: Obtener siempre el código más reciente
+        stage('Checkout') {
             steps {
                 script {
-                    echo 'Cleaning up environment...'
-                    // Detenemos y eliminamos contenedores existentes
-                    bat 'docker-compose down --remove-orphans || exit /b 0'
-                    bat 'docker rm -f pokeapi-container pokeapi-redis || exit /b 0'
-                    // Limpiamos imágenes no utilizadas
-                    bat 'docker image prune -f || exit /b 0'
+                    echo 'Fetching latest code from GitHub...'
+                    git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'master'
                 }
             }
         }
 
-        // 2. Checkout: Obtener el código del repositorio
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/Espinac0/pokeapi.git', branch: 'master'  // Clonar el repositorio
-            }
-        }
-
-        // 3. Build Docker Image: Crear la imagen Docker con el Dockerfile
+        // 2. Build Docker Image: Crear la imagen Docker
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo 'Building Docker image...'
-                    bat 'docker build -t %DOCKER_IMAGE% .'  // Construir imagen
+                    echo 'Building new Docker image...'
+                    sh 'docker build -t $DOCKER_IMAGE .'  // Usa build directo en lugar de `docker-compose build`
                 }
             }
         }
 
-        // 4. Run Docker Compose: Levantar tanto la aplicación como Redis
+        // 3. Run Docker Compose: Levantar la API y Redis
         stage('Run Docker Compose') {
             steps {
                 script {
-                    echo 'Running Docker Compose...'
-                    // Levantamos los servicios en segundo plano
-                    bat 'docker-compose up -d'
-                    // Esperamos a que los contenedores estén listos
-                    bat 'powershell -Command "Start-Sleep -Seconds 10"'
-                    // Verificamos que los contenedores están corriendo
-                    bat 'docker ps --format "{{.Names}}" | findstr pokeapi-container'
+                    echo 'Starting containers with Docker Compose...'
+                    sh 'docker-compose down --remove-orphans'
+                    sh 'docker-compose up -d --force-recreate'  // Asegura que usa la imagen nueva
                 }
             }
         }
 
-        // 5. Run Tests: Ejecutar los tests en el contenedor
+        // 4. Run Tests: Verificar que la API funciona bien
         stage('Run Pytest') {
             steps {
                 script {
-                    echo 'Running Pytest...'
-                    // Ejecutar tests en el contenedor
-                    bat 'docker exec pokeapi-container python -m pytest tests/'
+                    echo 'Running API tests...'
+                    sh 'docker exec $CONTAINER_NAME /app/venv/bin/pytest tests/'  // Si usas virtual env
                 }
             }
         }
@@ -68,10 +51,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully! API is available at http://localhost:8000'
+            echo '✅ Pipeline completed successfully! API is running at http://localhost:8000'
         }
         failure {
-            echo 'Pipeline failed. Check the logs for details.'
+            echo '❌ Pipeline failed. Check logs for errors.'
         }
     }
 }
