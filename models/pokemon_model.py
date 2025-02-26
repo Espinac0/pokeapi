@@ -17,7 +17,6 @@ type_to_id = {
 
 # Función para obtener los Pokémon por tipo
 def fetch_pokemons_by_type(type_name: str) -> List[str]:
-    """Obtiene Pokémon por tipo, usando el nombre del tipo."""
     type_id = type_to_id.get(type_name.lower(), None)
     if not type_id:
         return []
@@ -37,17 +36,15 @@ def fetch_pokemons_by_type(type_name: str) -> List[str]:
         return pokemons
     except Exception as e:
         logger = Logger()
-        logger.add_to_log("error", f"Error al obtener Pokémon del tipo {type_name}: {e}")
+        logger.add_to_log("error", f"Error obtaining pokemon type {type_name}: {e}")
         return []
 
-# Función para obtener los Pokémon de tipo agua
+# Función para obtener los Pokémon de tipo agua usando la de tipo
 def fetch_water_pokemons() -> List[str]:
-    """Obtiene Pokémon de tipo agua desde la PokeAPI."""
     return fetch_pokemons_by_type("water")
 
 # Función para obtener un Pokémon por su ID
 def fetch_pokemon_by_id(pokemon_id: int) -> str:
-    """Obtiene un Pokémon por su número (ID)."""
     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}/"
 
     cached_data = redis_client.get(str(pokemon_id))
@@ -62,5 +59,5 @@ def fetch_pokemon_by_id(pokemon_id: int) -> str:
         return data["name"]
     except Exception as e:
         logger = Logger()
-        logger.add_to_log("error", f"Error al obtener el Pokémon con ID {pokemon_id}: {e}")
+        logger.add_to_log("error", f"Error obtaining pokemon whit ID {pokemon_id}: {e}")
         return ""

@@ -5,7 +5,7 @@ from utils.Logger import Logger
 app = FastAPI(title="Pokémon API")
 logger = Logger()
 
-logger.add_to_log("info", "La aplicación FastAPI ha comenzado correctamente.")
+logger.add_to_log("info", "The app has started correctly .")
 
 app.include_router(router, prefix="")  # Aseguramos que no hay prefijo
 
