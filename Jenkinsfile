@@ -66,21 +66,21 @@ pipeline {
         }
     }
     // 6. Run Tests: Mirar los enpoitns
-    stage('Verify Endpoints') {
-    steps {
-        script {
-            echo 'Verifying API endpoints...'
-            // Verificar el endpoint raíz
-            bat 'curl -s http://localhost:8000/ || echo "Root endpoint failed"'
-            // Verificar el endpoint de Pokémon por ID
-            bat 'curl -s http://localhost:8000/pokemon/1 || echo "Pokemon by ID endpoint failed"'
-            // Verificar el endpoint de tipo
-            bat 'curl -s http://localhost:8000/type/water || echo "Type endpoint failed"'
-            // Verificar el endpoint de agua
-            bat 'curl -s http://localhost:8000/water-pokemons || echo "Water pokemons endpoint failed"'
+        stage('Verify Endpoints') {
+            steps {
+                  script {
+                echo 'Verifying API endpoints...'
+                // Verificar el endpoint raíz
+                bat 'curl -s http://localhost:8000/ || echo "Root endpoint failed"'
+                // Verificar el endpoint de Pokémon por ID
+                bat 'curl -s http://localhost:8000/pokemon/1 || echo "Pokemon by ID endpoint failed"'
+                // Verificar el endpoint de tipo
+                bat 'curl -s http://localhost:8000/type/water || echo "Type endpoint failed"'
+                // Verificar el endpoint de agua
+                bat 'curl -s http://localhost:8000/water-pokemons || echo "Water pokemons endpoint failed"'
+            }
         }
     }
-}
 
     post {
         success {
